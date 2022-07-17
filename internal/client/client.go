@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/julieqiu/derrors"
+	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 	"golang.org/x/vuln/osv"
 )
@@ -63,6 +64,7 @@ func (i *Issue) LabeledNeedsCVERecord() bool {
 
 type Client struct {
 	client *github.Client
+	ghsa   *githubv4.Client
 	owner  string
 	repo   string
 }
@@ -77,6 +79,7 @@ func New(ctx context.Context, owner, repo, accessToken string) *Client {
 		client: github.NewClient(tc),
 		owner:  owner,
 		repo:   repo,
+		ghsa:   githubv4.NewClient(tc),
 	}
 }
 
