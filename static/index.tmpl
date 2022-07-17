@@ -119,8 +119,12 @@
       <div>
       <div>
         {{range .ReleaseNotes}}
-          <div>{{.Version}}</div>
+          </br>
+          <div><a href="https://github.com/golang/go/issues?q=milestone%3AGo{{.Version}}+label%3ACherryPickApproved">Go {{.Version}} Milestone</a></div>
           <div>{{.Description}}</div>
+          {{range .Issues}}
+            <div><a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.PackagePath}}</div>
+          {{end}}
         {{end}}
       </div>
       <div>

@@ -151,9 +151,10 @@ func renderPage(ctx context.Context, w http.ResponseWriter, page interface{}, tm
 	return nil
 }
 
-type StdLibReport struct {
-	client.Issue
-	ReleaseNote *colly.ReleaseNote
+type StdlibReport struct {
+	Version     string
+	Description string
+	Issues      []*client.Issue
 }
 
 type indexPage struct {
@@ -161,14 +162,14 @@ type indexPage struct {
 	NumOpen           int
 	NumClosed         int
 	NumDBReports      int
-	StdLibIssues      []*StdLibReport
+	StdLibIssues      []*client.Issue
 	OpenIssues        []*client.Issue
 	ClosedNotGoVuln   []*client.Issue
 	ClosedNeedsReport []*client.Issue
 	ClosedDuplicate   []*client.Issue
 	ClosedOther       []*client.Issue
 	DBReports         map[int]*osv.Entry
-	ReleaseNotes      []*colly.ReleaseNote
+	ReleaseNotes      []*StdlibReport
 }
 
 func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
@@ -245,9 +246,17 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 	page := &indexPage{
 		NumDBReports: len(dbReports),
 		DBReports:    map[int]*osv.Entry{},
-		ReleaseNotes: releaseNotes,
 	}
 	fmt.Println(page.NumDBReports)
+
+	releaseNotes2 := map[string]*StdlibReport{}
+	for _, r := range releaseNotes {
+		r2 := &StdlibReport{
+			Version:     strings.TrimPrefix(r.Version, "go"),
+			Description: r.Description,
+		}
+		releaseNotes2[strings.TrimPrefix(r.Version, "go")] = r2
+	}
 	for _, i := range issues {
 		page.DBReports[i.Number] = i.OSV
 
@@ -258,10 +267,12 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 			page.NumClosed += 1
 		}
 		if i.IsStdLib {
-			report := &StdLibReport{
-				Issue: *i,
+			page.StdLibIssues = append(page.StdLibIssues, i)
+			for _, f := range i.Fixed {
+				if r2, ok := releaseNotes2[f]; ok {
+					r2.Issues = append(r2.Issues, i)
+				}
 			}
-			page.StdLibIssues = append(page.StdLibIssues, report)
 			continue
 		}
 		if i.Open {
@@ -278,7 +289,13 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 			}
 		}
 	}
+	for _, r2 := range releaseNotes2 {
+		page.ReleaseNotes = append(page.ReleaseNotes, r2)
+	}
 
+	sort.Slice(page.ReleaseNotes, func(i, j int) bool {
+		return page.ReleaseNotes[i].Version > page.ReleaseNotes[j].Version
+	})
 	sort.Slice(page.StdLibIssues, func(i, j int) bool {
 		return page.StdLibIssues[i].PackagePath < page.StdLibIssues[j].PackagePath
 	})
