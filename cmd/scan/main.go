@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 
 	"github.com/julieqiu/github/internal/client"
+	"github.com/julieqiu/github/internal/stats"
 )
 
 const (
@@ -29,12 +29,5 @@ func main() {
 
 func run(ctx context.Context, repo, tok string) error {
 	client := client.New(owner, repoName, tok)
-	issues, err := client.ListByRepo(ctx)
-	if err != nil {
-		return err
-	}
-	for _, i := range issues {
-		fmt.Printf("(%s) #%d: %s | %v\n", i.State, i.Number, i.Title, i.Labels)
-	}
-	return nil
+	return stats.Stats(ctx, client)
 }
