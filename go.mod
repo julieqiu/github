@@ -3,6 +3,7 @@ module github.com/julieqiu/github
 go 1.18
 
 require (
+	github.com/gocolly/colly/v2 v2.1.0
 	github.com/google/go-github/v41 v41.0.0
 	github.com/google/safehtml v0.0.2
 	github.com/julieqiu/derrors v0.0.0-20210614022941-f601489ffd41
@@ -16,12 +17,21 @@ require (
 	cloud.google.com/go v0.102.0 // indirect
 	cloud.google.com/go/compute v1.7.0 // indirect
 	cloud.google.com/go/logging v1.4.2 // indirect
+	github.com/PuerkitoBio/goquery v1.5.1 // indirect
+	github.com/andybalholm/cascadia v1.2.0 // indirect
+	github.com/antchfx/htmlquery v1.2.3 // indirect
+	github.com/antchfx/xmlquery v1.2.4 // indirect
+	github.com/antchfx/xpath v1.1.8 // indirect
+	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.0.0-20220520183353-fd19c99a87aa // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
+	github.com/kennygrant/sanitize v1.2.4 // indirect
+	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
+	github.com/temoto/robotstxt v1.1.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect

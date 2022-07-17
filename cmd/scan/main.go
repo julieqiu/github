@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/julieqiu/github/internal/client"
+	"github.com/julieqiu/github/internal/colly"
 	"github.com/julieqiu/github/internal/stats"
 )
 
@@ -29,5 +30,6 @@ func main() {
 
 func run(ctx context.Context, repo, tok string) error {
 	client := client.New(owner, repoName, tok)
-	return stats.Stats(ctx, client)
+	col := colly.New("https://go.dev/doc/devel/release")
+	return stats.Stats(ctx, client, col)
 }
