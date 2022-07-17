@@ -21,6 +21,33 @@
     <div>Closed Issues: {{.NumClosed}} (excluding ~139 dummy issues)</div>
   </div>
   <div>
+    <h2>Third Party</h2>
+      <div>
+        <h3>{{len .OpenIssues}} Open Issues</h3>
+        <div>
+          {{range .OpenIssues}}
+             <div>
+              <div>
+                <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.GHSA}} {{.ModulePath}}
+              </div>
+            </div>
+          {{end}}
+        </div>
+      <div>
+      <div>
+        <h3>{{len .ClosedNeedsReport}} Closed - With Report</h3>
+        <div>
+          {{range .ClosedNeedsReport}}
+             <div>
+              <div>
+                <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.GHSA}} {{.ModulePath}}
+              </div>
+            </div>
+          {{end}}
+        </div>
+      <div>
+  </div>
+  <div>
     <h2>{{len .StdLibIssues}} Standard Library</h2>
       <div>
         <div>
@@ -92,49 +119,20 @@
         </div>
       </div>
     </div>
-    <h2>Third Party</h2>
-      <div>
-        <h3>{{len .OpenIssues}} Open Issues</h3>
-        <div>
-          {{range .OpenIssues}}
-             <div>
-              <div>
-                <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.GHSA}} {{.ModulePath}}
-              </div>
-            </div>
-          {{end}}
-        </div>
-      <div>
-      <div>
-        <h3>{{len .ClosedNeedsReport}} Closed - With Report</h3>
-        <div>
-          {{range .ClosedNeedsReport}}
-             <div>
-              <div>
-                <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.GHSA}} {{.ModulePath}}
-              </div>
-            </div>
-          {{end}}
-        </div>
-      <div>
       <div>
         {{range .ReleaseNotes}}
           </br>
-          <div><a href="https://github.com/golang/go/issues?q=milestone%3AGo{{.Version}}+label%3ACherryPickApproved">Go {{.Version}} Milestone</a></div>
+          <div><strong>Go {{.Version}}</strong> (<a href="https://github.com/golang/go/issues?q=milestone%3AGo{{.Version}}+label%3ACherryPickApproved">Milestone</a>)</div>
           <div>{{.Description}}</div>
-          {{range .Issues}}
-            <div><a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.PackagePath}}</div>
+          {{if and (eq (len .Issues) 0) (.Description)}}
+            <p style="color: red;"><i>No issues created for this security release.</i></p>
           {{end}}
+          <ul>
+          {{range .Issues}}
+            <li><a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.PackagePath}}</li>
+          {{end}}
+          </ul>
         {{end}}
-      </div>
-      <div>
-        <div>
-          <h4>In Database</h4>
-            <div>Database Information</div>
-            <div>Label: NeedsReport</div>
-          <h4>NotGoVuln</h4>
-          <h4>duplicate</h4>
-        </div>
       </div>
     </div>
   </div>

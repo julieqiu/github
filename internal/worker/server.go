@@ -22,6 +22,7 @@ import (
 	log "github.com/julieqiu/dlog"
 	"github.com/julieqiu/github/internal/client"
 	"github.com/julieqiu/github/internal/colly"
+	"golang.org/x/mod/semver"
 	"golang.org/x/sync/errgroup"
 	vulnc "golang.org/x/vuln/client"
 	"golang.org/x/vuln/osv"
@@ -259,7 +260,6 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 	}
 	for _, i := range issues {
 		page.DBReports[i.Number] = i.OSV
-
 		page.NumIssues += 1
 		if i.Open {
 			page.NumOpen += 1
@@ -294,7 +294,7 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	sort.Slice(page.ReleaseNotes, func(i, j int) bool {
-		return page.ReleaseNotes[i].Version > page.ReleaseNotes[j].Version
+		return semver.Compare("v"+page.ReleaseNotes[i].Version, "v"+page.ReleaseNotes[j].Version) > 0
 	})
 	sort.Slice(page.StdLibIssues, func(i, j int) bool {
 		return page.StdLibIssues[i].PackagePath < page.StdLibIssues[j].PackagePath
