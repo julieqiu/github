@@ -129,9 +129,7 @@ func (sa *gqlSecurityAdvisory) securityAdvisory() (*SecurityAdvisory, error) {
 
 // List returns all SecurityAdvisories that affect Go,
 // published or updated since the given time.
-// If withCVE is true, selects only advisories that are
-// connected to CVEs, otherwise selects only advisories without CVEs.
-func (c *Client) ListGHSA(ctx context.Context, since time.Time, withCVE bool) ([]*SecurityAdvisory, error) {
+func (c *Client) ListGHSAs(ctx context.Context, since time.Time) ([]*SecurityAdvisory, error) {
 	var query struct { // the GraphQL query
 		SAs struct {
 			Nodes    []gqlSecurityAdvisory
@@ -155,9 +153,6 @@ func (c *Client) ListGHSA(ctx context.Context, since time.Time, withCVE bool) ([
 			return nil, err
 		}
 		for _, sa := range query.SAs.Nodes {
-			if withCVE != isCVE(sa.Identifiers) {
-				continue
-			}
 			if len(sa.Vulnerabilities.Nodes) == 0 {
 				continue
 			}

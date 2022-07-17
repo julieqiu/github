@@ -203,6 +203,12 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 		issues = issues2
 		return nil
 	})
+	var ghsas []*client.SecurityAdvisory
+	g.Go(func() error {
+		ghsas2, err := s.gitHubClient.ListGHSAs(ctx, time.Time{})
+		ghsas = ghsas2
+		return err
+	})
 	var releaseNotes []*colly.ReleaseNote
 	g.Go(func() error {
 		releaseNotes = s.collyClient.ReleaseNotes()
@@ -211,6 +217,14 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 	if err := g.Wait(); err != nil {
 		return err
 	}
+
+	for _, ghsa := range ghsas {
+		for _, id := range ghsa.Identifiers {
+			fmt.Printf("%s: %s, ", id.Type, id.Value)
+		}
+		fmt.Println()
+	}
+	fmt.Println("GHSAs: ", len(ghsas))
 
 	g, ctx = errgroup.WithContext(r.Context())
 	for _, i := range issues {
