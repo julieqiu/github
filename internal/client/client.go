@@ -17,15 +17,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const (
-	LabelNeedsCVEID     = "NeedsCVEID"
-	LabelNeedsCVERecord = "NeedsCVERecord"
-	LabelNeedsReport    = "NeedsReport"
-	LabelNotGoVuln      = "NotGoVuln"
-	LabelStdLib         = "stdlib"
-	LabelDuplicate      = "duplicate"
-)
-
 // An Issue represents a GitHub issue or similar.
 type Issue struct {
 	Number     int
@@ -33,34 +24,35 @@ type Issue struct {
 	Body       string
 	Labels     map[string]bool
 	CreatedAt  time.Time
-	State      string
 	ModulePath string
 	CVE        string
 	GHSA       string
+	IsStdLib   bool
+	Open       bool
 }
 
-func (i *Issue) IsStdLib() bool {
-	if i.Labels[LabelStdLib] {
-		return true
-	}
-	return strings.Contains(i.Title, "potential Go vuln in std")
-}
-func (i *Issue) Open() bool {
-	return i.State == "open"
+func (i *Issue) LabeledNotGoVuln() bool {
+	return i.Labels["NotGoVuln"]
 }
 
-func (i *Issue) Closed() bool {
-	return i.State == "closed"
+func (i *Issue) LabeledNeedsReport() bool {
+	return i.Labels["NeedsReport"]
 }
 
-func (i *Issue) IsVuln() bool {
-	if i.Labels[LabelNotGoVuln] {
-		return false
-	}
-	if i.Labels[LabelNeedsReport] {
-		return true
-	}
-	return true
+func (i *Issue) LabeledDuplicate() bool {
+	return i.Labels["duplicate"]
+}
+
+func (i *Issue) LabeledStdLib() bool {
+	return i.Labels["stdlib"]
+}
+
+func (i *Issue) LabeledNeedsCVEID() bool {
+	return i.Labels["NeedsCVEID"]
+}
+
+func (i *Issue) LabeledNeedsCVERecord() bool {
+	return i.Labels["NeedsCVERecord"]
 }
 
 type Client struct {
@@ -103,6 +95,9 @@ func (c *Client) ListByRepo(ctx context.Context) (_ []*Issue, err error) {
 
 	var out []*Issue
 	for _, i := range append(open, closed...) {
+		if *i.Number <= 139 {
+			continue
+		}
 		if i.PullRequestLinks != nil {
 			continue
 		}
@@ -138,15 +133,18 @@ func constructIssue(issue *github.Issue) (*Issue, error) {
 		Title:     *issue.Title,
 		CreatedAt: *issue.CreatedAt,
 		Body:      *issue.Body,
-		State:     *issue.State,
 		Labels:    map[string]bool{},
 	}
+	isl, err := isStdLib(issue)
+	if err != nil {
+		return nil, err
+	}
+	i2.IsStdLib = isl
 	for _, l := range issue.Labels {
 		i2.Labels[*l.Name] = true
 	}
-	// Dummy issues were created for these issues.
-	if i2.Number <= 139 {
-		return i2, nil
+	if *issue.State == "open" {
+		i2.Open = true
 	}
 
 	mp, cve, err := parseModulePathAndCVE(*issue.Title)
@@ -162,6 +160,19 @@ func constructIssue(issue *github.Issue) (*Issue, error) {
 	return i2, nil
 }
 
+func isStdLib(issue *github.Issue) (bool, error) {
+	for _, label := range issue.Labels {
+		if *label.Name == "stdlib" {
+			return true, nil
+		}
+	}
+	mp, _, err := parseModulePathAndCVE(*issue.Title)
+	if err != nil {
+		return false, err
+	}
+	return !strings.Contains(mp, "."), nil
+}
+
 var titleRegexp = regexp.MustCompile(`^x\/vulndb: potential Go vuln in (.+): (.*)$`)
 
 func parseModulePathAndCVE(title string) (string, string, error) {
@@ -170,5 +181,6 @@ func parseModulePathAndCVE(title string) (string, string, error) {
 		fmt.Println(m)
 		return "", "", fmt.Errorf("%q: not a valid title", title)
 	}
-	return m[1], m[2], nil
+	mp := strings.TrimSuffix(strings.TrimPrefix(m[1], `"`), `"`)
+	return mp, m[2], nil
 }

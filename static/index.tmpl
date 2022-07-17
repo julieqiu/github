@@ -1,0 +1,93 @@
+<!--
+  Copyright 2021 The Go Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style
+  license that can be found in the LICENSE file.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<link href="/static/static.css" rel="stylesheet">
+<title>VulnDB Stats</title>
+
+<body>
+  <h1>Go Vulnerability Database Stats</h1>
+  <div>
+    <h2>{{len .StdLibIssues}} Standard Library</h2>
+      <div style="display: flex; justify-content: space-between; max-width: 800px; margin: 20px">
+        <div>
+          <h3>Open Issues</h2>
+          {{range .StdLibIssues}}
+             <div>
+              <div>
+                {{if .Open}}
+                  <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}}
+                  {{if .LabeledNeedsReport}}
+                    <span>Needs Report</span>
+                  {{end}}
+                  {{if .LabeledNeedsCVEID}}
+                    <span>Needs CVE ID</span>
+                  {{end}}
+                  {{if not .LabeledStdLib}}
+                    <span>Needs Label</span>
+                  {{end}}
+                {{end}}
+              </div>
+            </div>
+          {{end}}
+        </div>
+        <div>
+          <h3>Closed Issues</h2>
+          {{range .StdLibIssues}}
+             <div>
+               {{if not .Open}}
+                 <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}}
+                {{if not .LabeledStdLib}}
+                  <span>Needs Label</span>
+                {{end}}
+               {{end}}
+            </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+    <h2>Third Party</h2>
+      <div>
+        <h3>{{len .OpenIssues}} Open Issues</h3>
+        <div>
+          {{range .OpenIssues}}
+             <div>
+              <div>
+                <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.GHSA}} {{.ModulePath}}
+              </div>
+            </div>
+          {{end}}
+        </div>
+      <div>
+      <div>
+        <h3>{{len .ClosedNeedsReport}} Closed - With Report</h3>
+        <div>
+          {{range .ClosedNeedsReport}}
+             <div>
+              <div>
+                <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}} {{.GHSA}} {{.ModulePath}}
+              </div>
+            </div>
+          {{end}}
+        </div>
+      <div>
+
+
+      <div>
+        <div>
+          <h4>In Database</h4>
+            <div>Database Information</div>
+            <div>Label: NeedsReport</div>
+          <h4>NotGoVuln</h4>
+          <h4>duplicate</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
