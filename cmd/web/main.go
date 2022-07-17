@@ -32,7 +32,7 @@ func main() {
 }
 
 func run(ctx context.Context, repoName, tok string) error {
-	githubClient := client.New(owner, repoName, tok)
+	githubClient := client.New(ctx, owner, repoName, tok)
 	dbs := []string{"https://vuln.go.dev"}
 	dbClient, err := vulnc.NewClient(dbs, vulnc.Options{})
 	if err != nil {

@@ -70,9 +70,9 @@ type Client struct {
 // New creates a Client that will create issues in
 // the a GitHub repo.
 // A GitHub access token is required to create issues.
-func New(owner, repo, accessToken string) *Client {
+func New(ctx context.Context, owner, repo, accessToken string) *Client {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
-	tc := oauth2.NewClient(context.Background(), ts)
+	tc := oauth2.NewClient(ctx, ts)
 	return &Client{
 		client: github.NewClient(tc),
 		owner:  owner,
