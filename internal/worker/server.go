@@ -151,12 +151,17 @@ func renderPage(ctx context.Context, w http.ResponseWriter, page interface{}, tm
 	return nil
 }
 
+type StdLibReport struct {
+	client.Issue
+	ReleaseNote *colly.ReleaseNote
+}
+
 type indexPage struct {
 	NumIssues         int
 	NumOpen           int
 	NumClosed         int
 	NumDBReports      int
-	StdLibIssues      []*client.Issue
+	StdLibIssues      []*StdLibReport
 	OpenIssues        []*client.Issue
 	ClosedNotGoVuln   []*client.Issue
 	ClosedNeedsReport []*client.Issue
@@ -253,7 +258,10 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 			page.NumClosed += 1
 		}
 		if i.IsStdLib {
-			page.StdLibIssues = append(page.StdLibIssues, i)
+			report := &StdLibReport{
+				Issue: *i,
+			}
+			page.StdLibIssues = append(page.StdLibIssues, report)
 			continue
 		}
 		if i.Open {
