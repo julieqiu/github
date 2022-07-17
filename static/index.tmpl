@@ -117,8 +117,12 @@
           {{end}}
         </div>
       <div>
-
-
+      <div>
+        {{range .ReleaseNotes}}
+          <div>{{.Version}}</div>
+          <div>{{.Description}}</div>
+        {{end}}
+      </div>
       <div>
         <div>
           <h4>In Database</h4>

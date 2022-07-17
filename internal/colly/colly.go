@@ -8,15 +8,14 @@ import (
 )
 
 type Client struct {
-	url   string
 	colly *colly.Collector
 }
 
-func New(url string) *Client {
+func New() *Client {
 	// Instantiate default collector
 	c := colly.NewCollector()
 	c.SetRequestTimeout(60 * time.Second)
-	return &Client{colly: c, url: url}
+	return &Client{colly: c}
 }
 
 type ReleaseNote struct {
@@ -24,8 +23,10 @@ type ReleaseNote struct {
 	Description string
 }
 
-func (c *Client) ReleaseNotes() string {
-	var notes []string
+const releaseNotesURL = "https://go.dev/doc/devel/release"
+
+func (c *Client) ReleaseNotes() []*ReleaseNote {
+	var notes []*ReleaseNote
 	c.colly.OnHTML("p", func(e *colly.HTMLElement) {
 		id := e.Attr("id")
 		if id == "" {
@@ -37,9 +38,9 @@ func (c *Client) ReleaseNotes() string {
 		}
 		if strings.Contains(e.Text, "security") {
 			n.Description = strings.Join(strings.Fields(e.Text), " ")
-			return
 		}
+		notes = append(notes, n)
 	})
-	c.colly.Visit(c.url)
-	return
+	c.colly.Visit(releaseNotesURL)
+	return notes
 }

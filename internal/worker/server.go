@@ -21,6 +21,7 @@ import (
 	"github.com/julieqiu/derrors"
 	log "github.com/julieqiu/dlog"
 	"github.com/julieqiu/github/internal/client"
+	"github.com/julieqiu/github/internal/colly"
 	"golang.org/x/sync/errgroup"
 	vulnc "golang.org/x/vuln/client"
 	"golang.org/x/vuln/osv"
@@ -34,14 +35,16 @@ type Server struct {
 	indexTemplate *template.Template
 	gitHubClient  *client.Client
 	dbClient      vulnc.Client
+	collyClient   *colly.Client
 }
 
-func NewServer(ctx context.Context, githubClient *client.Client, vulndbClient vulnc.Client) (_ *Server, err error) {
+func NewServer(ctx context.Context, githubClient *client.Client, vulndbClient vulnc.Client, collyClient *colly.Client) (_ *Server, err error) {
 	defer derrors.Wrap(&err, "NewServer")
 
 	s := &Server{
 		gitHubClient: githubClient,
 		dbClient:     vulndbClient,
+		collyClient:  collyClient,
 	}
 	s.indexTemplate, err = parseTemplate(staticPath, template.TrustedSourceFromConstant("index.tmpl"))
 	if err != nil {
@@ -160,6 +163,7 @@ type indexPage struct {
 	ClosedDuplicate   []*client.Issue
 	ClosedOther       []*client.Issue
 	DBReports         map[int]*osv.Entry
+	ReleaseNotes      []*colly.ReleaseNote
 }
 
 func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
@@ -190,6 +194,11 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 		}
 		fmt.Println(len(issues2))
 		issues = issues2
+		return nil
+	})
+	var releaseNotes []*colly.ReleaseNote
+	g.Go(func() error {
+		releaseNotes = s.collyClient.ReleaseNotes()
 		return nil
 	})
 	if err := g.Wait(); err != nil {
@@ -228,7 +237,11 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	page := &indexPage{NumDBReports: len(dbReports), DBReports: map[int]*osv.Entry{}}
+	page := &indexPage{
+		NumDBReports: len(dbReports),
+		DBReports:    map[int]*osv.Entry{},
+		ReleaseNotes: releaseNotes,
+	}
 	fmt.Println(page.NumDBReports)
 	for _, i := range issues {
 		page.DBReports[i.Number] = i.OSV

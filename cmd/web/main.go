@@ -8,6 +8,7 @@ import (
 
 	log "github.com/julieqiu/dlog"
 	"github.com/julieqiu/github/internal/client"
+	"github.com/julieqiu/github/internal/colly"
 	"github.com/julieqiu/github/internal/worker"
 	vulnc "golang.org/x/vuln/client"
 )
@@ -37,7 +38,8 @@ func run(ctx context.Context, repoName, tok string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := worker.NewServer(ctx, githubClient, dbClient); err != nil {
+	collyClient := colly.New()
+	if _, err := worker.NewServer(ctx, githubClient, dbClient, collyClient); err != nil {
 		return err
 	}
 	addr := ":6060"

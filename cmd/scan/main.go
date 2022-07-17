@@ -30,6 +30,6 @@ func main() {
 
 func run(ctx context.Context, repo, tok string) error {
 	client := client.New(owner, repoName, tok)
-	col := colly.New("https://go.dev/doc/devel/release")
+	col := colly.New()
 	return stats.Stats(ctx, client, col)
 }
