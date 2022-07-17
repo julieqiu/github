@@ -3,14 +3,13 @@ module github.com/julieqiu/github
 go 1.18
 
 require (
-	cloud.google.com/go/errorreporting v0.2.0
 	github.com/google/go-github/v41 v41.0.0
 	github.com/google/safehtml v0.0.2
 	github.com/julieqiu/derrors v0.0.0-20210614022941-f601489ffd41
 	github.com/julieqiu/dlog v0.0.0-20220521223154-5020f471fd21
-	github.com/shurcooL/githubv4 v0.0.0-20220520033151-0b4e3294ff00
 	golang.org/x/oauth2 v0.0.0-20220630143837-2104d58473e0
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
+	golang.org/x/vuln v0.0.0-20220713211855-48d9d445cf94
 )
 
 require (
@@ -23,9 +22,9 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.0.0-20220520183353-fd19c99a87aa // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
-	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d // indirect
 	golang.org/x/text v0.3.7 // indirect

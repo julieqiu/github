@@ -13,17 +13,31 @@
 <body>
   <h1>Go Vulnerability Database Stats</h1>
   <div>
+    <h2>{{.NumDBReports}} Reports in Database</h2>
+  </div>
+  <div>
+    <h2>{{.NumIssues}} Issues</h2>
+    <div>Open Issues: {{.NumOpen}}</div>
+    <div>Closed Issues: {{.NumClosed}} (excluding ~139 dummy issues)</div>
+  </div>
+  <div>
     <h2>{{len .StdLibIssues}} Standard Library</h2>
-      <div style="display: flex; justify-content: space-between; max-width: 800px; margin: 20px">
+      <div>
         <div>
           <h3>Open Issues</h2>
+          <table>
           {{range .StdLibIssues}}
-             <div>
-              <div>
-                {{if .Open}}
-                  <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}}
-                  {{if .LabeledNeedsReport}}
-                    <span>Needs Report</span>
+            <tr>
+              {{if .Open}}
+                <td>
+                  <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>
+                </td>
+                <td>
+                  <span>{{.CVE}}</span>
+                </td>
+                <td>
+                  {{if .HasReport}}
+                    <span>Has Report</span>
                   {{end}}
                   {{if .LabeledNeedsCVEID}}
                     <span>Needs CVE ID</span>
@@ -31,23 +45,50 @@
                   {{if not .LabeledStdLib}}
                     <span>Needs Label</span>
                   {{end}}
-                {{end}}
-              </div>
-            </div>
+                </td>
+              {{end}}
+            </tr>
           {{end}}
+          </table>
         </div>
         <div>
           <h3>Closed Issues</h2>
+          <table>
+            <tr>
+              <th>GitHub Issue</th>
+              <th>CVE</th>
+              <th>Package Path</th>
+              <th>Has Report</th>
+              <th>Labeled StdLib</th>
+              <th>Fixed</th>
+            </tr>
           {{range .StdLibIssues}}
-             <div>
-               {{if not .Open}}
-                 <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>: {{.CVE}}
-                {{if not .LabeledStdLib}}
-                  <span>Needs Label</span>
+            <tr>
+            {{if not .Open}}
+              <td>
+                <a href="https://github.com/golang/vulndb/issues/{{ .Number }}">{{ .Number }}</a>
+              </td>
+              <td>
+                <span>{{.CVE}}</span>
+              </td>
+              <td>
+                <span>{{.PackagePath}}</span>
+              </td>
+              <td>
+                {{if .HasReport}}✔️ {{end}}
+              </td>
+              <td>
+                {{if .LabeledStdLib}}✔️ {{end}}
+              </td>
+              <td>
+                {{range .Fixed}}
+                    {{.}}
                 {{end}}
-               {{end}}
-            </div>
+              </td>
+            {{end}}
+            </tr>
           {{end}}
+          <table>
         </div>
       </div>
     </div>

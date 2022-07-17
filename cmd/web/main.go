@@ -9,6 +9,7 @@ import (
 	log "github.com/julieqiu/dlog"
 	"github.com/julieqiu/github/internal/client"
 	"github.com/julieqiu/github/internal/worker"
+	vulnc "golang.org/x/vuln/client"
 )
 
 const (
@@ -30,8 +31,13 @@ func main() {
 }
 
 func run(ctx context.Context, repoName, tok string) error {
-	client := client.New(owner, repoName, tok)
-	if _, err := worker.NewServer(ctx, client); err != nil {
+	githubClient := client.New(owner, repoName, tok)
+	dbs := []string{"https://vuln.go.dev"}
+	dbClient, err := vulnc.NewClient(dbs, vulnc.Options{})
+	if err != nil {
+		return err
+	}
+	if _, err := worker.NewServer(ctx, githubClient, dbClient); err != nil {
 		return err
 	}
 	addr := ":6060"

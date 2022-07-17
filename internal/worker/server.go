@@ -13,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/safehtml/template"
@@ -20,6 +22,8 @@ import (
 	log "github.com/julieqiu/dlog"
 	"github.com/julieqiu/github/internal/client"
 	"golang.org/x/sync/errgroup"
+	vulnc "golang.org/x/vuln/client"
+	"golang.org/x/vuln/osv"
 )
 
 const pkgsiteURL = "https://pkg.go.dev"
@@ -29,12 +33,16 @@ var staticPath = template.TrustedSourceFromConstant("static")
 type Server struct {
 	indexTemplate *template.Template
 	gitHubClient  *client.Client
+	dbClient      vulnc.Client
 }
 
-func NewServer(ctx context.Context, client *client.Client) (_ *Server, err error) {
+func NewServer(ctx context.Context, githubClient *client.Client, vulndbClient vulnc.Client) (_ *Server, err error) {
 	defer derrors.Wrap(&err, "NewServer")
 
-	s := &Server{gitHubClient: client}
+	s := &Server{
+		gitHubClient: githubClient,
+		dbClient:     vulndbClient,
+	}
 	s.indexTemplate, err = parseTemplate(staticPath, template.TrustedSourceFromConstant("index.tmpl"))
 	if err != nil {
 		return nil, err
@@ -141,30 +149,96 @@ func renderPage(ctx context.Context, w http.ResponseWriter, page interface{}, tm
 }
 
 type indexPage struct {
+	NumIssues         int
+	NumOpen           int
 	NumClosed         int
+	NumDBReports      int
 	StdLibIssues      []*client.Issue
 	OpenIssues        []*client.Issue
 	ClosedNotGoVuln   []*client.Issue
 	ClosedNeedsReport []*client.Issue
 	ClosedDuplicate   []*client.Issue
 	ClosedOther       []*client.Issue
+	DBReports         map[int]*osv.Entry
 }
 
 func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
-	g, _ := errgroup.WithContext(r.Context())
+	g, ctx := errgroup.WithContext(r.Context())
+	dbReports := map[int]string{}
 	g.Go(func() error {
+		ids, err := s.dbClient.ListIDs(ctx)
+		if err != nil {
+			return err
+		}
+		fmt.Println("ListIDs: ", len(ids))
+		for _, id := range ids {
+			parts := strings.Split(id, "-")
+			n, err := strconv.Atoi(parts[2])
+			if err != nil {
+				return err
+			}
+			dbReports[n] = id
+		}
+		fmt.Println("dbReports: ", len(dbReports))
+		return nil
+	})
+	var issues []*client.Issue
+	g.Go(func() error {
+		issues2, err := s.gitHubClient.ListByRepo(r.Context())
+		if err != nil {
+			return err
+		}
+		fmt.Println(len(issues2))
+		issues = issues2
 		return nil
 	})
 	if err := g.Wait(); err != nil {
 		return err
 	}
 
-	issues, err := s.gitHubClient.ListByRepo(r.Context())
-	if err != nil {
+	g, ctx = errgroup.WithContext(r.Context())
+	for _, i := range issues {
+		i := i
+		g.Go(func() error {
+			if goid, ok := dbReports[i.Number]; ok {
+				i.HasReport = true
+				osv, err := s.dbClient.GetByID(ctx, goid)
+				if err != nil {
+					return err
+				}
+				i.OSV = osv
+				for _, aff := range osv.Affected {
+					i.PackagePath = aff.Package.Name
+					for _, r := range aff.Ranges {
+						for _, event := range r.Events {
+							if event.Introduced != "" {
+								i.Introduced = append(i.Introduced, event.Introduced)
+							}
+							if event.Fixed != "" {
+								i.Fixed = append(i.Fixed, event.Fixed)
+							}
+						}
+					}
+				}
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
 		return err
 	}
-	page := &indexPage{}
+
+	page := &indexPage{NumDBReports: len(dbReports), DBReports: map[int]*osv.Entry{}}
+	fmt.Println(page.NumDBReports)
 	for _, i := range issues {
+		page.DBReports[i.Number] = i.OSV
+
+		page.NumIssues += 1
+		if i.Open {
+			page.NumOpen += 1
+		} else {
+			page.NumClosed += 1
+		}
 		if i.IsStdLib {
 			page.StdLibIssues = append(page.StdLibIssues, i)
 			continue
@@ -172,7 +246,6 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 		if i.Open {
 			page.OpenIssues = append(page.OpenIssues, i)
 		} else {
-			page.NumClosed += 1
 			if i.Labels["NotGoVuln"] {
 				page.ClosedNotGoVuln = append(page.ClosedNotGoVuln, i)
 			} else if i.Labels["NeedsReport"] {
@@ -184,6 +257,10 @@ func (s *Server) indexPage(w http.ResponseWriter, r *http.Request) error {
 			}
 		}
 	}
+
+	sort.Slice(page.StdLibIssues, func(i, j int) bool {
+		return page.StdLibIssues[i].PackagePath < page.StdLibIssues[j].PackagePath
+	})
 	sort.Slice(page.OpenIssues, func(i, j int) bool {
 		return page.OpenIssues[i].ModulePath < page.OpenIssues[j].ModulePath
 	})

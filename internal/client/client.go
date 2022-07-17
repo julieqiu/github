@@ -15,20 +15,26 @@ import (
 	"github.com/google/go-github/v41/github"
 	"github.com/julieqiu/derrors"
 	"golang.org/x/oauth2"
+	"golang.org/x/vuln/osv"
 )
 
 // An Issue represents a GitHub issue or similar.
 type Issue struct {
-	Number     int
-	Title      string
-	Body       string
-	Labels     map[string]bool
-	CreatedAt  time.Time
-	ModulePath string
-	CVE        string
-	GHSA       string
-	IsStdLib   bool
-	Open       bool
+	Number      int
+	Title       string
+	Body        string
+	Labels      map[string]bool
+	CreatedAt   time.Time
+	ModulePath  string
+	PackagePath string
+	Introduced  []string
+	Fixed       []string
+	CVE         string
+	GHSA        string
+	IsStdLib    bool
+	Open        bool
+	HasReport   bool
+	OSV         *osv.Entry
 }
 
 func (i *Issue) LabeledNotGoVuln() bool {
@@ -92,27 +98,45 @@ func (c *Client) ListByRepo(ctx context.Context) (_ []*Issue, err error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("%d open issues, including PRs\n", len(open))
+	fmt.Printf("%d closed issues, including PRs\n", len(closed))
 
-	var out []*Issue
-	for _, i := range append(open, closed...) {
-		if *i.Number <= 139 {
+	for k, v := range closed {
+		open[k] = v
+	}
+	fmt.Printf("%d total issues, including PRs\n", len(open))
+
+	var (
+		out   []*Issue
+		dummy int
+		prs   int
+	)
+	for _, issue := range open {
+		if issue.IsPullRequest() {
+			prs += 1
 			continue
 		}
-		if i.PullRequestLinks != nil {
+		if *issue.Number <= 139 {
+			dummy += 1
+			if *issue.State == "open" {
+				fmt.Println("open: ", *issue.Number)
+			}
 			continue
 		}
-		i2, err := constructIssue(i)
+		i2, err := constructIssue(issue)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, i2)
 	}
+	fmt.Printf("%d dummy issues (skipped)\n", dummy)
+	fmt.Printf("%d PRs (skipped) \n", prs)
 	return out, nil
 }
 
-func (c *Client) listByRepo(ctx context.Context, opts *github.IssueListByRepoOptions) (_ []*github.Issue, err error) {
+func (c *Client) listByRepo(ctx context.Context, opts *github.IssueListByRepoOptions) (_ map[int]*github.Issue, err error) {
 	opts.ListOptions = github.ListOptions{Page: 1, PerPage: 100}
-	var out []*github.Issue
+	out := map[int]*github.Issue{}
 	for {
 		issues, _, err := c.client.Issues.ListByRepo(ctx, c.owner, c.repo, opts)
 		if err != nil {
@@ -122,7 +146,9 @@ func (c *Client) listByRepo(ctx context.Context, opts *github.IssueListByRepoOpt
 			break
 		}
 		opts.Page += 1
-		out = append(out, issues...)
+		for _, iss := range issues {
+			out[*iss.Number] = iss
+		}
 	}
 	return out, nil
 }
